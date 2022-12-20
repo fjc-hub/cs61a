@@ -158,9 +158,9 @@ def always_roll(n):
     3
     """
     assert n >= 0 and n <= 10
-    # BEGIN PROBLEM 6
-    "*** YOUR CODE HERE ***"
-    # END PROBLEM 6
+    def strategy(scores, opponent_score):
+        return n
+    return strategy
 
 
 def catch_up(score, opponent_score):
@@ -188,10 +188,16 @@ def is_always_roll(strategy, goal=GOAL):
     >>> is_always_roll(catch_up)
     False
     """
-    # BEGIN PROBLEM 7
-    "*** YOUR CODE HERE ***"
-    # END PROBLEM 7
-
+    first = strategy(0, 0)
+    x = 99
+    while x >= 0 :
+        y = 99
+        while y >= 0:
+            if strategy(x, y) != first :
+                return False 
+            y -= 1
+        x -= 1
+    return True
 
 def make_averaged(original_function, total_samples=1000):
     """Return a function that returns the average value of ORIGINAL_FUNCTION
@@ -204,9 +210,14 @@ def make_averaged(original_function, total_samples=1000):
     >>> averaged_dice(1, dice)  # The avg of 10 4's, 10 2's, 10 5's, and 10 1's
     3.0
     """
-    # BEGIN PROBLEM 8
-    "*** YOUR CODE HERE ***"
-    # END PROBLEM 8
+    def closure(*args) :
+        sum = 0
+        x = total_samples
+        while x > 0 :
+            sum += original_function(*args)
+            x -= 1
+        return sum / total_samples
+    return closure
 
 
 def max_scoring_num_rolls(dice=six_sided, total_samples=1000):
@@ -218,9 +229,15 @@ def max_scoring_num_rolls(dice=six_sided, total_samples=1000):
     >>> max_scoring_num_rolls(dice)
     1
     """
-    # BEGIN PROBLEM 9
-    "*** YOUR CODE HERE ***"
-    # END PROBLEM 9
+    ans = -1
+    t, max = 1, 0
+    averaged_dice = make_averaged(roll_dice, total_samples)
+    while t <= 10 :
+        tmp = averaged_dice(t, dice)
+        if tmp > max :
+            ans, max = t, tmp
+        t += 1
+    return ans
 
 
 def winner(strategy0, strategy1):
@@ -262,16 +279,21 @@ def tail_strategy(score, opponent_score, threshold=12, num_rolls=6):
     """This strategy returns 0 dice if Pig Tail gives at least THRESHOLD
     points, and returns NUM_ROLLS otherwise. Ignore score and Square Swine.
     """
-    # BEGIN PROBLEM 10
-    return num_rolls  # Remove this line once implemented.
-    # END PROBLEM 10
+    tmp = tail_points(opponent_score)
+    if threshold <= tmp :
+        return 0
+    return num_rolls
 
 
 def square_strategy(score, opponent_score, threshold=12, num_rolls=6):
     """This strategy returns 0 dice when your score would increase by at least threshold."""
-    # BEGIN PROBLEM 11
-    return num_rolls  # Remove this line once implemented.
-    # END PROBLEM 11
+    tmp = tail_strategy(score, opponent_score, threshold, num_rolls)
+    if tmp == 0 :
+        return 0
+    next = next_perfect_square(tail_points(opponent_score) + score)
+    if next - score >= threshold :
+        return 0
+    return num_rolls
 
 
 def final_strategy(score, opponent_score):
