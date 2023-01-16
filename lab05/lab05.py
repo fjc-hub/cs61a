@@ -200,7 +200,18 @@ def sprout_leaves(t, leaves):
           1
           2
     """
-    "*** YOUR CODE HERE ***"
+    if not is_tree(t):
+      return t
+    if is_leaf(t):
+      tmp = []
+      for x in leaves:
+        tmp += [tree(x)]
+      return tree(label(t), tmp)
+    ret = []
+    for next in branches(t):
+      ret += [sprout_leaves(next, leaves)]
+    return tree(label(t), ret)
+      
 
 # Abstraction tests for sprout_leaves and berry_finder
 
@@ -263,7 +274,26 @@ def preorder(t):
     >>> preorder(tree(2, [tree(4, [tree(6)])]))
     [2, 4, 6]
     """
-    "*** YOUR CODE HERE ***"
+    # Iteration Version
+    ans = [label(t)]
+    stack = [{'TreeNode': t, 'Status': 0}]
+    while len(stack) > 0:
+      curr = stack[len(stack)-1]
+      if curr['Status'] >= len(branches(curr['TreeNode'])):
+        stack = stack[:len(stack)-1]
+        continue
+      
+      status = curr['Status']
+      nexts = branches(curr['TreeNode'])
+      if len(nexts) == 0:
+        continue
+      next = nexts[status]
+      curr['Status'] = status + 1
+      assert is_tree(next)
+      ans += [label(next)]
+      stack += [{'TreeNode': next, 'Status': 0}]
+      
+    return ans
 
 
 def add_trees(t1, t2):
@@ -301,7 +331,23 @@ def add_trees(t1, t2):
         5
       5
     """
-    "*** YOUR CODE HERE ***"
+    if (not is_tree(t1)) and (not is_tree(t2)):
+      return None
+    elif not is_tree(t1):
+      return t2
+    elif not is_tree(t2):
+      return t1
+    next1, next2 = branches(t1), branches(t2)
+    nexts = []
+    for i in range(max(len(next1), len(next2))):
+      n1, n2 = None, None
+      if i < len(next1):
+        n1 = next1[i]
+      if i < len(next2):
+        n2 = next2[i]
+      nexts += [add_trees(n1, n2)]
+    
+    return tree(label(t1) + label(t2), nexts)
 
 
 def change_abstraction(change):
