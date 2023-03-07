@@ -44,6 +44,7 @@ def non_decrease_subseqs(s):
     >>> sorted(seqs2)
     [[], [1], [1], [1, 1], [1, 1, 2], [1, 2], [1, 2], [2]]
     """
+    # return non_decrease_subseqs_v2(s)
     def subseq_helper(s, prev):
         if not s:
             return [[]]
@@ -115,6 +116,7 @@ def partition_gen(n):
     [2, 2]
     [4]
     """
+    # return partition_gen_v2(n)
     def gen(m, pre):
         if m == 0:
             yield []
@@ -179,7 +181,29 @@ class VendingMachine:
     >>> w.vend()
     'Here is your soda.'
     """
-    "*** YOUR CODE HERE ***"
+    def __init__(self, name, price) -> None:
+        self.name = name
+        self.price = price
+        self.stock = 0
+        self.fund = 0
+    
+    def vend(self):
+        if self.stock <= 0:
+            return 'Nothing left to vend. Please restock.'
+        if self.fund < self.price:
+            return f'Please update your balance with ${self.price - self.fund} more funds.'
+        change, self.fund, self.stock = self.fund - self.price, 0, self.stock-1
+        return f'Here is your {self.name}{f" and ${change} change" if change > 0 else ""}.'
+
+    def add_funds(self, fund):
+        if self.stock <= 0:
+            return f'Nothing left to vend. Please restock. Here is your ${fund}.'
+        self.fund += fund
+        return f'Current balance: ${self.fund}'
+
+    def restock(self, stock):
+        self.stock += stock
+        return f'Current {self.name} stock: {self.stock}'
 
 
 def trade(first, second):
@@ -219,9 +243,9 @@ def trade(first, second):
     """
     m, n = 1, 1
 
-    equal_prefix = lambda: ______________________
-    while _______________________________:
-        if __________________:
+    equal_prefix = lambda: sum(first[:m]) == sum(second[:n])
+    while m <= len(first) and n <= len(second) and not equal_prefix():
+        if sum(first[:m]) < sum(second[:n]):
             m += 1
         else:
             n += 1
@@ -259,11 +283,11 @@ def shuffle(cards):
     ['AH', 'AD', 'AS', 'AC', '2H', '2D', '2S', '2C', '3H', '3D', '3S', '3C']
     """
     assert len(cards) % 2 == 0, 'len(cards) must be even'
-    half = _______________
+    half = len(cards) // 2
     shuffled = []
-    for i in _____________:
-        _________________
-        _________________
+    for i in range(half):
+        shuffled += [cards[i]]
+        shuffled += [cards[i+half]]
     return shuffled
 
 
@@ -287,7 +311,15 @@ def insert(link, value, index):
         ...
     IndexError: Out of bounds!
     """
-    "*** YOUR CODE HERE ***"
+    while index > 0 and link != Link.empty:
+        link = link.rest
+        index -= 1
+    
+    if link == Link.empty:
+        raise IndexError('Out of bounds!')
+    
+    link.first, link.rest = value, Link(link.first, link.rest)
+    return None
 
 
 def deep_len(lnk):
@@ -304,12 +336,19 @@ def deep_len(lnk):
     >>> deep_len(levels)
     5
     """
-    if ______________:
+    #   4
+    #   |
+    # *-*-5
+    # |
+    # *-1-2
+    # |
+    # 3
+    if lnk == Link.empty:
         return 0
-    elif ______________:
-        return 1
+    elif type(lnk.first) != Link:
+        return 1 + deep_len(lnk.rest)
     else:
-        return _________________________
+        return deep_len(lnk.rest) + deep_len(lnk.first)
 
 
 def make_to_string(front, mid, back, empty_repr):
@@ -328,10 +367,10 @@ def make_to_string(front, mid, back, empty_repr):
     '()'
     """
     def printer(lnk):
-        if ______________:
-            return _________________________
+        if lnk == Link.empty:
+            return str(empty_repr)
         else:
-            return _________________________
+            return str(front) + str(lnk.first) + str(mid) + printer(lnk.rest) + str(back)
     return printer
 
 
@@ -385,7 +424,23 @@ def long_paths(t, n):
     >>> long_paths(whole, 4)
     [[0, 11, 12, 13, 14]]
     """
-    "*** YOUR CODE HERE ***"
+    ans = []
+    path = []
+    def traverse(root):
+        nonlocal path, ans
+        if root.is_leaf():
+            if len(path) >= n:
+                ans += [path + [root.label]] # a copy
+            return None
+        path += [root.label]
+        for nxt in root.branches:
+            traverse(nxt)
+        path = path[:len(path)-1]
+    
+    traverse(t)
+
+    return sorted(ans, key=lambda v: v)
+
 
 
 def reverse_other(t):
@@ -401,7 +456,18 @@ def reverse_other(t):
     >>> t
     Tree(1, [Tree(8, [Tree(3, [Tree(5), Tree(4)]), Tree(6, [Tree(7)])]), Tree(2)])
     """
-    "*** YOUR CODE HERE ***"
+    def reverse(root, depth):
+        if root.is_leaf():
+            return None
+        if depth % 2 == 0:
+            old = [t.label for t in root.branches]
+            i = len(old)-1
+            for nxt in root.branches:
+                nxt.label = old[i]
+                i -= 1
+        for nxt in root.branches:
+            reverse(nxt, depth+1)
+    reverse(t, 0)
 
 
 class Link:
