@@ -34,6 +34,7 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
         else:
             return env.lookup(expr)  # symbol
     else:
+        ## Non-atomic Expressions
         arr = expr[1:-1].split(' ')
         return scheme_apply(arr[0], arr[1:], env)
 
@@ -41,6 +42,9 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
 def scheme_apply(procedure, args, env):
     """Apply Scheme PROCEDURE to argument values ARGS (a Scheme list) in
     Frame ENV, the current environment."""
+    
+
+def read_line(str):
     
 
 
