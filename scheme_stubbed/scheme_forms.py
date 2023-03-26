@@ -12,20 +12,25 @@ How you implement special forms is up to you. We recommend you encapsulate the
 logic for each special form separately somehow, which you can do here.
 """
 
-SPECIAL_FORMS = []
+SPECIAL_FORM_NAMES = []
+SPECIAL_FORM_FUNC = {}
 
 def special_form(name):
     def add(f):
-        SPECIAL_FORMS.append((name, f))
+        SPECIAL_FORM_FUNC[name] = f
+        SPECIAL_FORM_NAMES.append(name)
     return add
 
 '''
-1. <x> refers to a required element x that can be vary
-2. [x] refers to an optional element x
+Syntax:
+    1. <x> refers to a required element x that can be vary
+    2. [x] refers to an optional element x
+
+args is scheme list(Pair list, actually)
 '''
 
 @special_form("define")
-def define_eval(*args, env):
+def define_eval(args, env):
     ret = None
     if args[0][0] != '(':
         # (define <name> <expression>) | (define <name> (lambda ([param] ...) <body> ...))
@@ -38,7 +43,7 @@ def define_eval(*args, env):
 
 
 @special_form("if")
-def if_eval(*args, env):
+def if_eval(args, env):
     # (if <predicate> <consequent> [alternative])
     if scheme_eval(args[0], env) == '#t':
         return scheme_eval(args[1], env)
@@ -47,7 +52,7 @@ def if_eval(*args, env):
 
 
 @special_form("cond")
-def cond_eval(*args, env):
+def cond_eval(args, env):
     # (cond <clause> ...)
     # <clause> -> (<test> [expression] ...) | (else [expression] ...)
     for clause in args:
@@ -60,7 +65,7 @@ def cond_eval(*args, env):
 
 
 @special_form("and")
-def and_eval(*args, env):
+def and_eval(args, env):
     # (and [test] ...)
     if all([test == '#t' for test in args]):
         return '#t'
@@ -68,7 +73,7 @@ def and_eval(*args, env):
 
 
 @special_form("or")
-def or_eval(*args, env):
+def or_eval(args, env):
     # (or [test] ...)
     if any([test == '#t' for test in args]):
         return '#t'
@@ -76,7 +81,7 @@ def or_eval(*args, env):
 
 
 @special_form("let")
-def let_eval(*args, env):
+def let_eval(args, env):
     # (let ([binding] ...) <body> ...)
     # [binding] -> (<name> <expression>)
     if args[0][0] == args[0][1] and args[0][1] == '(':
@@ -85,30 +90,30 @@ def let_eval(*args, env):
 
 
 @special_form("begin")
-def begin_eval(*args, env):
+def begin_eval(args, env):
     pass
 
 
 @special_form("lambda")
-def lambda_eval(*args, env):
+def lambda_eval(args, env):
     pass
 
 
 @special_form("quote")
-def quote_eval(*args, env):
+def quote_eval(args, env):
     pass
 
 
 @special_form("quasiquote")
-def quasiquote_eval(*args, env):
+def quasiquote_eval(args, env):
     pass
 
 
 @special_form("unquote")
-def unquote_eval(*args, env):
+def unquote_eval(args, env):
     pass
 
 
 @special_form("mu")
-def mu_eval(*args, env):
+def mu_eval(args, env):
     pass

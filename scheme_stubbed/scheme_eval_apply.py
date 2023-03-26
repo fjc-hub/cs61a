@@ -6,6 +6,7 @@ from scheme_utils import *
 from ucb import main, trace
 
 import scheme_forms
+import scheme_tokens
 
 ##############
 # Eval/Apply #
@@ -21,31 +22,47 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
     >>> scheme_eval(expr, create_global_frame())
     4
     """
-    if expr[0] != '(':
+    if expr.rest == nil:
         ## Atomic Expressions
-        if expr.isdigit():
-            return int(expr)  # Number
-        elif expr in ['#t', '#f']:
-            return expr  # Boolean
-        elif expr[0] == "'":
-            return expr[1:]  # string
-        elif expr == 'nil':
+        item = expr.first
+        if item.isdigit():
+            return int(item)  # Number
+        elif item in ['#t', '#f']:
+            return item  # Boolean
+        elif item[0] == "'":
+            return item[1:]  # string
+        elif item == 'nil':
             return nil  # empty list
         else:
-            return env.lookup(expr)  # symbol
+            return env.lookup(item)  # symbol
     else:
         ## Non-atomic Expressions
-        arr = expr[1:-1].split(' ')
-        return scheme_apply(arr[0], arr[1:], env)
+        return scheme_apply(expr.first, expr.rest.map(scheme_eval), env)
 
 
 def scheme_apply(procedure, args, env):
     """Apply Scheme PROCEDURE to argument values ARGS (a Scheme list) in
     Frame ENV, the current environment."""
+    if procedure in scheme_forms.SPECIAL_FORM_NAMES:
+        ## Special Form
+        func = scheme_forms.SPECIAL_FORM_FUNC[procedure]
+        return func(args, env)
+    else:
+        pass
+        ## Call
+        # bulit-in
+        
+        # user-define
     
 
 def read_line(str):
-    
+    lst = scheme_tokens.tokenize_line(str)
+    head = Pair('head', nil)
+    tmp = head
+    for p in lst:
+        tmp.rest = Pair(p, nil)
+        tmp = tmp.rest
+    return head.rest
 
 
 ##################
