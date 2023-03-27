@@ -36,7 +36,7 @@ class Frame:
             return self.symbol_table[symbol]
         else:
             if self.parent is None:
-                raise TypeError(f"symbol: {symbol} not found in environment: {self}")
+                raise SchemeError(f"symbol: {symbol} not found in environment: {self}")
             return self.parent.lookup(symbol)
 
 ##############
