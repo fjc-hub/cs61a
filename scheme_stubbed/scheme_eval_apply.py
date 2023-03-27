@@ -7,12 +7,29 @@ from ucb import main, trace
 
 import scheme_forms
 import scheme_tokens
+import scheme_builtins
 
 ##############
 # Eval/Apply #
 ##############
 
+# Syntax Analysis:
+# parentheses are ignored by cs61a's tokenizer, but it's still listed in Syntax Analysis.
+# (x) represents optional element.
+# x* represents one or more element.
+# x? represents zero or one element.
+# 
+#   1.Expression -> '(' Procedure (Expression)* ')' | Atom
+#   2.Atom -> integer | float | string | scheme-list | symbol
+#   3.SpecialForm -> define_SF | if_SF | cond_SF | and_SF | or_SF | let_SF | begin_SF |
+#                   lambda_SF | quote_SF | quasiquote_SF | unquote_SF | mu_SF
+#   remainded syntax analysis of SpecialForm are listed in scheme_forms.py file
+#   
 
+# Get result of Expression
+#   1.Atomic-Expression(primitive-value)
+#   2.Special-Form
+#   3.Call-Expression
 def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
     """Evaluate Scheme expression EXPR in Frame ENV.
 
@@ -22,24 +39,32 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
     >>> scheme_eval(expr, create_global_frame())
     4
     """
-    if expr.rest == nil:
+    if isinstance(expr, (int, float, nil, str)):
         ## Atomic Expressions
-        item = expr.first
-        if item.isdigit():
-            return int(item)  # Number
-        elif item in ['#t', '#f']:
-            return item  # Boolean
-        elif item[0] == "'":
-            return item[1:]  # string
-        elif item == 'nil':
-            return nil  # empty list
+        if not isinstance(expr, str):
+            return expr
         else:
-            return env.lookup(item)  # symbol
+            if expr[0] == "'":
+                return expr[1:]  # string
+            elif expr in ['#t', '#f']:
+                return expr  # Boolean
+            else:
+                return env.lookup(expr)  # symbol
+    elif isinstance(expr, Pair):
+        ## Call-Expression
+        if expr.first not in scheme_forms.SPECIAL_FORM_NAMES:
+            arguments = expr.rest.map(lambda x: scheme_eval(x, env))
+            return scheme_apply(expr.first, arguments, env)
+        ## Special-Form
+        if expr.first == ''
+        func = scheme_forms.SPECIAL_FORM_FUNC[expr.first]
+        return func(args, env)
     else:
-        ## Non-atomic Expressions
-        return scheme_apply(expr.first, expr.rest.map(scheme_eval), env)
+        raise TypeError("unknown expr in scheme_eval")
 
-
+# Get result of:
+#   1.Built-in Procedure(primitive-procedure)  
+#   2.User-defined Procedure
 def scheme_apply(procedure, args, env):
     """Apply Scheme PROCEDURE to argument values ARGS (a Scheme list) in
     Frame ENV, the current environment."""
@@ -48,11 +73,14 @@ def scheme_apply(procedure, args, env):
         func = scheme_forms.SPECIAL_FORM_FUNC[procedure]
         return func(args, env)
     else:
-        pass
         ## Call
-        # bulit-in
-        
-        # user-define
+        arg_list = args.flatmap(lambda x: scheme_eval(x, env))
+        # bulit-in procedure
+        for built_func in scheme_builtins.BUILTINS:
+            if built_func[0] == procedure:
+                return built_func[1]()
+        # user-define procedure
+        pass
     
 
 def read_line(str):
