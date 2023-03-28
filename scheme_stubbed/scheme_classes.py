@@ -32,12 +32,15 @@ class Frame:
         self.symbol_table[symbol] = value
 
     def lookup(self, symbol):
-        if symbol in self.symbol_table:
-            return self.symbol_table[symbol]
-        else:
-            if self.parent is None:
-                raise TypeError(f"symbol: {symbol} not found in environment: {self}")
-            return self.parent.lookup(symbol)
+        try:
+            if symbol in self.symbol_table:
+                return self.symbol_table[symbol]
+            else:
+                if self.parent is None:
+                    raise SchemeError(f"symbol: {symbol} not found in environment: {self}")
+                return self.parent.lookup(symbol)
+        except TypeError:
+            raise SchemeError(f"invalid symbol: {symbol}")
 
 ##############
 # Procedures #

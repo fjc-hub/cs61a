@@ -19,6 +19,7 @@ def special_form(name):
     def add(f):
         SPECIAL_FORM_FUNC[name] = f
         SPECIAL_FORM_NAMES.append(name)
+        KEYWORDS.append(name)
     return add
 
 '''
@@ -29,17 +30,14 @@ Syntax:
 args is scheme list(Pair list, actually)
 '''
 
+# define_SF -> '(' 'define' Identifier Expression ')' | 
+#               '(' 'define' '(' Identifier (Identifier)* ')' (Expression)* ')'
 @special_form("define")
 def define_eval(args, env):
-    ret = None
-    if args[0][0] != '(':
-        # (define <name> <expression>) | (define <name> (lambda ([param] ...) <body> ...))
-        assert len(args) == 2
-        env.define(args[0], scheme_eval(args[1], env))
-        return args[0]
-    else:
-        # (define (<name> [param] ...) <body> ...)
-        pass
+    validate_form(args, 2, 2)
+    identifier = args.first
+    env.define(identifier, scheme_eval(args.rest.first, env))
+    return identifier
 
 
 @special_form("if")
