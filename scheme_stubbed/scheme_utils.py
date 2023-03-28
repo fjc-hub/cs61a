@@ -118,3 +118,8 @@ def validate_formals(formals):
     while isinstance(formals, Pair):
         validate_and_add(formals.first, formals.rest is nil)
         formals = formals.rest
+
+def validate_identifier(expr):
+    if not scheme_symbolp(expr):
+        raise SchemeError("invalid identifier: {expr}")
+    return expr

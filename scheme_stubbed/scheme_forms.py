@@ -19,7 +19,6 @@ def special_form(name):
     def add(f):
         SPECIAL_FORM_FUNC[name] = f
         SPECIAL_FORM_NAMES.append(name)
-        KEYWORDS.append(name)
     return add
 
 '''
@@ -34,10 +33,23 @@ args is scheme list(Pair list, actually)
 #               '(' 'define' '(' Identifier (Identifier)* ')' (Expression)* ')'
 @special_form("define")
 def define_eval(args, env):
-    validate_form(args, 2, 2)
-    identifier = args.first
-    env.define(identifier, scheme_eval(args.rest.first, env))
-    return identifier
+    validate_form(args, 2)
+    if scheme_symbolp(args.first):
+        # binding value to symbol
+        identifier = args.first
+        validate_identifier(identifier)
+        env.define(identifier, scheme_eval(args.rest.first, env))
+        return identifier
+    else:
+        # binding procedure to symbol
+        func_sign = args.first
+        validate_form(func_sign, 1)  # there must be at least one Pair
+        identifier = func_sign.first
+        params = func_sign.flatmap(lambda x:x.first)
+        body = args.rest
+        procedure = LambdaProcedure(params, body, env)
+        env.define(identifier, procedure)
+        return identifier
 
 
 @special_form("if")
@@ -86,10 +98,13 @@ def let_eval(args, env):
         # binding
         pass
 
-
+# begin_SF -> '(' 'begin' (Expression)* ')'
 @special_form("begin")
 def begin_eval(args, env):
-    pass
+    ret = None
+    for expr in args.flatmap(lambda x:x.first):
+        ret = scheme_eval(expr, env)
+    return ret
 
 
 @special_form("lambda")
@@ -99,7 +114,8 @@ def lambda_eval(args, env):
 
 @special_form("quote")
 def quote_eval(args, env):
-    pass
+    validate_form(args, 1, 1)
+    return args.first
 
 
 @special_form("quasiquote")

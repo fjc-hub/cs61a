@@ -7,7 +7,6 @@ from ucb import main, trace
 
 import scheme_forms
 import scheme_tokens
-import scheme_builtins
 
 ##############
 # Eval/Apply #
@@ -29,7 +28,6 @@ import scheme_builtins
 #   remainded syntax analysis of SpecialForm are listed in scheme_forms.py file
 #   
 
-KEYWORDS = scheme_builtins.BUILTINS[:]  # copying after BUILTINS inited by decorator?
 
 # Get result of Expression
 #   1.AtomicExpression(primitive-value)
@@ -44,7 +42,7 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
     >>> scheme_eval(expr, create_global_frame())
     4
     """
-    print("DEBUG:", "scheme_eval", expr, type(expr))
+    print("DEBUG:", "scheme_eval", expr, expr.__repr__(), type(expr))
     if expr is None:
         return None  # scheme_atomp(None) = False ?
     ## AtomicExpression
