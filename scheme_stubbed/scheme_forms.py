@@ -19,18 +19,15 @@ def special_form(name):
     def add(f):
         SPECIAL_FORM_FUNC[name] = f
         SPECIAL_FORM_NAMES.append(name)
+        return f  # must return raw function, otherwise, raw function will be assigned as None
     return add
 
 '''
-Syntax:
-    1. <x> refers to a required element x that can be vary
-    2. [x] refers to an optional element x
-
 args is scheme list(Pair list, actually)
 '''
 
 # define_SF -> '(' 'define' Identifier Expression ')' | 
-#               '(' 'define' '(' Identifier (Identifier)* ')' (Expression)* ')'
+#               '(' 'define' '(' Identifier (Identifier)* ')' (Expression)+ ')'
 @special_form("define")
 def define_eval(args, env):
     validate_form(args, 2)
@@ -45,71 +42,112 @@ def define_eval(args, env):
         func_sign = args.first
         validate_form(func_sign, 1)  # there must be at least one Pair
         identifier = func_sign.first
-        params = func_sign.flatmap(lambda x:x.first)
+        params = func_sign.rest
+        validate_formals(params)
         body = args.rest
         procedure = LambdaProcedure(params, body, env)
         env.define(identifier, procedure)
         return identifier
 
 
+# is_SF -> '(' 'if' Expression Expression (Expression)? ')'
 @special_form("if")
 def if_eval(args, env):
-    # (if <predicate> <consequent> [alternative])
-    if scheme_eval(args[0], env) == '#t':
-        return scheme_eval(args[1], env)
-    else:
-        return scheme_eval(args[2], env)
+    validate_form(args, 2)
+    flag = scheme_eval(args.first, env)
+    if is_scheme_true(flag):
+        return scheme_eval(args.rest.first, env)
+    if args.rest.rest == nil:
+        return None
+    return scheme_eval(args.rest.rest.first, env)
 
 
+# cond_SF -> '(' 'cond' (cond_clause)+ (cond_else)* ')'
+#   cond_clause -> '(' Expression (Expression)* ')'
+#   cond_else -> '(' 'else' (Expression)* ')'
 @special_form("cond")
 def cond_eval(args, env):
-    # (cond <clause> ...)
-    # <clause> -> (<test> [expression] ...) | (else [expression] ...)
-    for clause in args:
-        arr = clause[1:-1].split(' ')
-        if arr[0] == 'else':
-            return scheme_eval(arr[1:], env)
+    validate_form(args, 1)
+    while args != nil:
+        clause = args.first
+        validate_form(clause, 1)
+        flag = False
+        if clause.first == 'else':
+            flag = True
         else:
-            if scheme_eval(arr[0], env) == '#t':
-                return scheme_eval(arr[1:], env)
+            flag = scheme_eval(clause.first, env)
+        if is_scheme_true(flag):
+            if clause.rest == nil:
+                return flag
+            return begin_eval(clause.rest, env)
+        args = args.rest
+    return None
 
 
+# and_SF -> '(' 'and' (Atomic)* ')'
 @special_form("and")
 def and_eval(args, env):
-    # (and [test] ...)
-    if all([test == '#t' for test in args]):
-        return '#t'
-    return '#f'
+    val = True
+    while args != nil:
+        if not isinstance(args, Pair):
+            raise SchemeError("invalid expressions in and: {args}")
+        val = scheme_eval(args.first, env)
+        if is_scheme_false(val):
+            return val
+        args = args.rest
+    return val
 
 
+# or_SF -> '(' 'or' (Atomic)* ')'
 @special_form("or")
 def or_eval(args, env):
-    # (or [test] ...)
-    if any([test == '#t' for test in args]):
-        return '#t'
-    return '#f'
+    val = False
+    while args != nil:
+        if not isinstance(args, Pair):
+            raise SchemeError("invalid expressions in and: {args}")
+        val = scheme_eval(args.first, env)
+        if is_scheme_true(val):
+            return val
+        args = args.rest
+    return val
 
 
+# let_SF -> '(' 'let' '(' (let_bind)* ')' (Expresssion)+ ')'
+#   let_bind -> '(' Identifier Expression ')'
 @special_form("let")
 def let_eval(args, env):
-    # (let ([binding] ...) <body> ...)
-    # [binding] -> (<name> <expression>)
-    if args[0][0] == args[0][1] and args[0][1] == '(':
-        # binding
-        pass
+    newFrame = Frame(env)
+    # binding temporary-symbol
+    bindings = args.first
+    while bindings != nil:
+        bind = bindings.first
+        validate_form(bind, 2)
+        identifier = bind.first
+        newFrame.define(identifier, scheme_eval(bind.rest, newFrame))
+        bindings = bindings.rest
+    # interpret Expression s
+    body = args.rest
+    return begin_eval(body, env)
 
-# begin_SF -> '(' 'begin' (Expression)* ')'
+
+# begin_SF -> '(' 'begin' (Expression)+ ')'
 @special_form("begin")
 def begin_eval(args, env):
     ret = None
-    for expr in args.flatmap(lambda x:x.first):
+    if not isinstance(args, Pair):
+        raise SchemeError("invalid expressions in begin eval: {args}")
+    while args != nil:
+        expr = args.first
+        args = args.rest
         ret = scheme_eval(expr, env)
     return ret
 
 
 @special_form("lambda")
 def lambda_eval(args, env):
-    pass
+    if args == nil or args.rest == nil:
+        raise SchemeError("invalid lambda expression")
+    return LambdaProcedure(args.first, args.rest, env)
 
 
 @special_form("quote")
@@ -128,6 +166,15 @@ def unquote_eval(args, env):
     pass
 
 
+# mu_SF -> '(' 'mu' '(' (Identifier)+ ')' (Expression)* ')'
 @special_form("mu")
 def mu_eval(args, env):
-    pass
+    validate_form(args, 2)
+    params = args.first
+    formals = []
+    while params != nil:
+        validate_identifier(params.first)
+        formals.append(params.first)
+        params = params.rest
+    body = args.rest
+    return MuProcedure(formals, body)

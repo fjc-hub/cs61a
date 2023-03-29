@@ -59,14 +59,20 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
         ## SpecialForm
         if expr.first in scheme_forms.SPECIAL_FORM_NAMES:
             func = scheme_forms.SPECIAL_FORM_FUNC[expr.first]
-            # operands = expr.rest.map(lambda x: scheme_eval(x, env))
             return func(expr.rest, env)
         ## CallExpression
-        operator = env.lookup(expr.first)  # look up Procedure in Symbol-Table-Hierachy
+        operator = None
+        if isinstance(expr.first, Pair):
+            operator = scheme_eval(expr.first, env)  # operator maybe a lambda/returned procedure
+        else:
+            operator = env.lookup(expr.first)  # look up Procedure in Symbol-Table-Hierachy
+        validate_procedure(operator)
         operands = expr.rest.map(lambda x: scheme_eval(x, env))
         return scheme_apply(operator, operands, env)
     else:
         raise SchemeError("unknown expr in scheme_eval")
+
+
 
 # Get result of CallExpression:
 #   1.Built-in Procedure(primitive-procedure, no new Frame/Env)  
@@ -89,8 +95,18 @@ def scheme_apply(procedure, args, env):
         except TypeError:
             raise SchemeError('incorrect number of arguments')
     ## User-defined Procedure
-    proc = env.lookup(procedure)
-    return scheme_eval(proc, Frame(env))
+    if isinstance(procedure, LambdaProcedure):
+        newFrame = Frame(procedure.env)
+        params = procedure.formals
+        while params != nil and args != nil:  # set argument to Frame
+            newFrame.define(params.first, args.first)
+            params, args = params.rest, args.rest
+        if not (params == args and args == nil):
+            raise SchemeError("apply invalid number of arguments to {procedure}")
+        print("DEBUG:",scheme_forms, scheme_forms.special_form, type(scheme_forms.begin_eval))
+        return scheme_forms.begin_eval(procedure.body, newFrame)
+    
+    raise TypeError("未实现")
 
 
 def read_line(str):

@@ -19,7 +19,7 @@ class Frame:
     def __init__(self, parent):
         """An empty frame with parent frame PARENT (which may be None)."""
         self.parent = parent
-        self.symbol_table = dict()
+        self.bindings = dict()  # symbol_table
 
     def __repr__(self):
         if self.parent is None:
@@ -29,12 +29,12 @@ class Frame:
 
     def define(self, symbol, value):
         """Define Scheme SYMBOL to have VALUE."""
-        self.symbol_table[symbol] = value
+        self.bindings[symbol] = value
 
     def lookup(self, symbol):
         try:
-            if symbol in self.symbol_table:
-                return self.symbol_table[symbol]
+            if symbol in self.bindings:
+                return self.bindings[symbol]
             else:
                 if self.parent is None:
                     raise SchemeError(f"symbol: {symbol} not found in environment: {self}")
