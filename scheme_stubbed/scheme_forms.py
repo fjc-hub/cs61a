@@ -121,13 +121,14 @@ def let_eval(args, env):
     bindings = args.first
     while bindings != nil:
         bind = bindings.first
-        validate_form(bind, 2)
+        validate_form(bind, 2, 2)
         identifier = bind.first
-        newFrame.define(identifier, scheme_eval(bind.rest, newFrame))
+        validate_identifier(identifier)
+        newFrame.define(identifier, scheme_eval(bind.rest.first, env))
         bindings = bindings.rest
     # interpret Expression s
     body = args.rest
-    return begin_eval(body, env)
+    return begin_eval(body, newFrame)
 
 
 # begin_SF -> '(' 'begin' (Expression)+ ')'
@@ -145,8 +146,7 @@ def begin_eval(args, env):
 
 @special_form("lambda")
 def lambda_eval(args, env):
-    if args == nil or args.rest == nil:
-        raise SchemeError("invalid lambda expression")
+    validate_form(args, 2)
     return LambdaProcedure(args.first, args.rest, env)
 
 
@@ -171,10 +171,5 @@ def unquote_eval(args, env):
 def mu_eval(args, env):
     validate_form(args, 2)
     params = args.first
-    formals = []
-    while params != nil:
-        validate_identifier(params.first)
-        formals.append(params.first)
-        params = params.rest
     body = args.rest
-    return MuProcedure(formals, body)
+    return MuProcedure(params, body)

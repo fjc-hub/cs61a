@@ -42,7 +42,6 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
     >>> scheme_eval(expr, create_global_frame())
     4
     """
-    print("DEBUG:", "scheme_eval", expr, expr.__repr__(), type(expr))
     if expr is None:
         return None  # scheme_atomp(None) = False ?
     ## AtomicExpression
@@ -63,7 +62,7 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
         ## CallExpression
         operator = None
         if isinstance(expr.first, Pair):
-            operator = scheme_eval(expr.first, env)  # operator maybe a lambda/returned procedure
+            operator = scheme_eval(expr.first, env)  # operator maybe a lambda/procedure/mu
         else:
             operator = env.lookup(expr.first)  # look up Procedure in Symbol-Table-Hierachy
         validate_procedure(operator)
@@ -80,7 +79,6 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
 def scheme_apply(procedure, args, env):
     """Apply Scheme PROCEDURE to argument values ARGS (a Scheme list/Pair LinkedList) in
     Frame ENV, the current environment."""
-    print("DEBUG:", "scheme_apply", procedure, args, type(args))
     validate_procedure(procedure)
     ## Built-in Procedure
     if isinstance(procedure, BuiltinProcedure):
@@ -95,18 +93,20 @@ def scheme_apply(procedure, args, env):
         except TypeError:
             raise SchemeError('incorrect number of arguments')
     ## User-defined Procedure
+    call_frame = None
     if isinstance(procedure, LambdaProcedure):
-        newFrame = Frame(procedure.env)
-        params = procedure.formals
-        while params != nil and args != nil:  # set argument to Frame
-            newFrame.define(params.first, args.first)
-            params, args = params.rest, args.rest
-        if not (params == args and args == nil):
-            raise SchemeError("apply invalid number of arguments to {procedure}")
-        print("DEBUG:",scheme_forms, scheme_forms.special_form, type(scheme_forms.begin_eval))
-        return scheme_forms.begin_eval(procedure.body, newFrame)
-    
-    raise TypeError("未实现")
+        call_frame = Frame(procedure.env)
+    elif isinstance(procedure, MuProcedure):
+        call_frame = env
+    else:
+        raise TypeError(f"unimplemented procedure: {procedure}")
+    params = procedure.formals
+    while params != nil and args != nil:  # set argument to Frame
+        call_frame.define(params.first, args.first)
+        params, args = params.rest, args.rest
+    if not (params == nil and args == nil):
+        raise SchemeError(f"apply invalid number of arguments to {procedure}, {params}, {args}")
+    return scheme_forms.begin_eval(procedure.body, call_frame)
 
 
 def read_line(str):
