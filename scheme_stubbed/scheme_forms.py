@@ -144,6 +144,7 @@ def begin_eval(args, env):
     return ret
 
 
+# lambda_SF -> '(' 'lambda' '(' (Identifier)* ')' (Expression)+ ')'
 @special_form("lambda")
 def lambda_eval(args, env):
     validate_form(args, 2)
@@ -166,10 +167,8 @@ def unquote_eval(args, env):
     pass
 
 
-# mu_SF -> '(' 'mu' '(' (Identifier)+ ')' (Expression)* ')'
+# mu_SF -> '(' 'mu' '(' (Identifier)* ')' (Expression)+ ')'
 @special_form("mu")
 def mu_eval(args, env):
     validate_form(args, 2)
-    params = args.first
-    body = args.rest
-    return MuProcedure(params, body)
+    return MuProcedure(args.first, args.rest)

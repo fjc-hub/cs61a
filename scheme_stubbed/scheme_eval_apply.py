@@ -58,16 +58,22 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
         ## SpecialForm
         if expr.first in scheme_forms.SPECIAL_FORM_NAMES:
             func = scheme_forms.SPECIAL_FORM_FUNC[expr.first]
-            return func(expr.rest, env)
+            ret = func(expr.rest, env)
+            # recognize tail call function
+            if expr.first == 'define':
+                tmp = env.lookup(ret)
+                if isinstance(tmp, Procedure) and is_tail_call(ret, tmp):
+                    env.define(ret, Unevaluated(tmp.formals, tmp.body, env))
+            return ret
         ## CallExpression
         operator = None
         if isinstance(expr.first, Pair):
-            operator = scheme_eval(expr.first, env)  # operator maybe a lambda/procedure/mu
+            operator = scheme_eval(expr.first, env)  # operator maybe a lambda/regular-procedure/mu
         else:
             operator = env.lookup(expr.first)  # look up Procedure in Symbol-Table-Hierachy
         validate_procedure(operator)
         operands = expr.rest.map(lambda x: scheme_eval(x, env))
-        return scheme_apply(operator, operands, env)
+        return complete_apply(operator, operands, env)  # return scheme_apply(operator, operands, env)
     else:
         raise SchemeError("unknown expr in scheme_eval")
 
@@ -100,14 +106,18 @@ def scheme_apply(procedure, args, env):
         call_frame = env
     else:
         raise TypeError(f"unimplemented procedure: {procedure}")
-    params = procedure.formals
-    while params != nil and args != nil:  # set argument to Frame
-        call_frame.define(params.first, args.first)
-        params, args = params.rest, args.rest
-    if not (params == nil and args == nil):
-        raise SchemeError(f"apply invalid number of arguments to {procedure}, {params}, {args}")
+    assign_args_to_params(call_frame, args, procedure.formals)
     return scheme_forms.begin_eval(procedure.body, call_frame)
 
+
+# binding arguments to parameters of a function in Frame env
+def assign_args_to_params(env, args, params):
+    while params != nil and args != nil:  # set argument to Frame
+        env.define(params.first, args.first)
+        params, args = params.rest, args.rest
+    if not (params == nil and args == nil):
+        raise SchemeError(f"apply invalid number of arguments to {params}, {args}")
+    
 
 def read_line(str):
     lst = scheme_tokens.tokenize_line(str)
@@ -125,8 +135,34 @@ def read_line(str):
 
 # Make classes/functions for creating tail recursive programs here!
 # BEGIN Problem EC
-"*** YOUR CODE HERE ***"
-# END Problem EC
+class Unevaluated(LambdaProcedure, MuProcedure):
+
+    name = '[Unevaluated]'
+
+    def __init__(self, procedure):
+        if isinstance(procedure, LambdaProcedure):
+            self.formals = procedure.formals
+            self.body = procedure.body
+            self.env = procedure.env
+        elif isinstance(procedure, MuProcedure):
+            self.formals = procedure.formals
+            self.body = procedure.body
+            self.env = None
+        else:
+            raise SchemeError("Unevaluated __init__ error")
+
+
+def is_tail_call(func_name, body):
+    last_expr = None
+    while body != nil:
+        last_expr = body.first
+        body = body.rest
+    if last_expr is None or scheme_atomp(last_expr):
+        return False
+    assert isinstance(last_expr, Pair)
+    if func_name == last_expr.first:
+        return True
+    return False
 
 
 def complete_apply(procedure, args, env):
@@ -135,5 +171,29 @@ def complete_apply(procedure, args, env):
     if you attempt the extra credit."""
     validate_procedure(procedure)
     # BEGIN
-    return val
+    # Eliminate Tail Call
+    if isinstance(procedure, Unevaluated):
+        reuse_frame = procedure.env
+        if reuse_frame is None:
+            reuse_frame = env
+        # Tail Call ==> Iteration
+        exprs = procedure.body
+        assign_args_to_params(reuse_frame, args, procedure.formals)
+        while exprs != nil:
+            expr = exprs.first
+            
+            exprs = exprs.rest
+        
+    # normal Call
+    return scheme_apply(procedure, args, env)
     # END
+
+
+# tail-call example: factorial algorithm: tail_call(1, n) = n!
+# wikipedia: https://en.wikipedia.org/wiki/Tail_call
+def tail_call(pre, idx):
+    if idx == 0:
+        return pre
+    return tail_call(pre * idx, idx - 1)
+
+# END Problem EC
