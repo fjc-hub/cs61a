@@ -125,7 +125,15 @@ def read_line(str):
 
 # Make classes/functions for creating tail recursive programs here!
 # BEGIN Problem EC
-"*** YOUR CODE HERE ***"
+class Unevaluated:
+    """An expression and an environment in which it is to be evaluated."""
+
+    def __init__(self, expr, env):
+        """Expression EXPR to be evaluated in Frame ENV."""
+        self.expr = expr
+        self.env = env
+
+
 # END Problem EC
 
 
@@ -135,5 +143,35 @@ def complete_apply(procedure, args, env):
     if you attempt the extra credit."""
     validate_procedure(procedure)
     # BEGIN
+    val = scheme_apply(procedure, args, env)
+    if isinstance(val, Unevaluated):
+        return scheme_eval(val.expr, val.env)
     return val
     # END
+
+
+def optimize_tail_calls(unoptimized_scheme_eval):
+    """Return a properly tail recursive version of an eval function."""
+    def optimized_eval(expr, env, tail=False):
+        """Evaluate Scheme expression EXPR in Frame ENV. If TAIL,
+        return an Unevaluated containing an expression for further evaluation.
+        """
+        if tail and not scheme_symbolp(expr) and not self_evaluating(expr):
+            return Unevaluated(expr, env)
+
+        result = Unevaluated(expr, env)
+
+        # BEGIN PROBLEM EC
+        "*** YOUR CODE HERE ***"
+        while (isinstance(result, Unevaluated)):
+            result = unoptimized_scheme_eval(result.expr, result.env)
+        return result
+        # END PROBLEM EC
+    return optimized_eval
+
+
+################################################################
+# Uncomment the following line to apply tail call optimization #
+################################################################
+
+scheme_eval = optimize_tail_calls(scheme_eval)

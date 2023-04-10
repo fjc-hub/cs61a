@@ -56,10 +56,10 @@ def if_eval(args, env):
     validate_form(args, 2)
     flag = scheme_eval(args.first, env)
     if is_scheme_true(flag):
-        return scheme_eval(args.rest.first, env)
+        return scheme_eval(args.rest.first, env, True)
     if args.rest.rest == nil:
         return None
-    return scheme_eval(args.rest.rest.first, env)
+    return scheme_eval(args.rest.rest.first, env, True)
 
 
 # cond_SF -> '(' 'cond' (cond_clause)+ (cond_else)* ')'
