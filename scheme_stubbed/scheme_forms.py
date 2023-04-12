@@ -91,7 +91,10 @@ def and_eval(args, env):
     while args != nil:
         if not isinstance(args, Pair):
             raise SchemeError("invalid expressions in and: {args}")
-        val = scheme_eval(args.first, env)
+        if args.rest == nil:
+            val = scheme_eval(args.first, env, True)
+        else:
+            val = scheme_eval(args.first, env, False)
         if is_scheme_false(val):
             return val
         args = args.rest
@@ -105,7 +108,10 @@ def or_eval(args, env):
     while args != nil:
         if not isinstance(args, Pair):
             raise SchemeError("invalid expressions in and: {args}")
-        val = scheme_eval(args.first, env)
+        if args.rest == nil:
+            val = scheme_eval(args.first, env, True)
+        else:
+            val = scheme_eval(args.first, env, False)
         if is_scheme_true(val):
             return val
         args = args.rest
@@ -138,9 +144,11 @@ def begin_eval(args, env):
     if not isinstance(args, Pair):
         raise SchemeError("invalid expressions in begin eval: {args}")
     while args != nil:
-        expr = args.first
+        if args.rest == nil:
+            ret = scheme_eval(args.first, env, True)
+        else:
+            ret = scheme_eval(args.first, env, False)
         args = args.rest
-        ret = scheme_eval(expr, env)
     return ret
 
 
@@ -173,3 +181,9 @@ def mu_eval(args, env):
     params = args.first
     body = args.rest
     return MuProcedure(params, body)
+
+# define-macro_SF -> '(' 'define-macro' '(' (Identifier)+ (Identifier)* ')' (Expression)* ')'
+@special_form("define-macro")
+def define_macro_eval(args, env):
+    func_name = define_eval(args, env)
+    pass
