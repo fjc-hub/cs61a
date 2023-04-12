@@ -58,16 +58,22 @@ def scheme_eval(expr, env, _=None):  # Optional third argument is ignored
         ## SpecialForm
         if expr.first in scheme_forms.SPECIAL_FORM_NAMES:
             func = scheme_forms.SPECIAL_FORM_FUNC[expr.first]
-            return func(expr.rest, env)
+            ret = func(expr.rest, env)
+            # recognize tail call function
+            if expr.first == 'define':
+                tmp = env.lookup(ret)
+                if isinstance(tmp, Procedure) and is_tail_call(ret, tmp):
+                    env.define(ret, Unevaluated(tmp.formals, tmp.body, env))
+            return ret
         ## CallExpression
         operator = None
         if isinstance(expr.first, Pair):
-            operator = scheme_eval(expr.first, env)  # operator maybe a lambda/procedure/mu
+            operator = scheme_eval(expr.first, env)  # operator maybe a lambda/regular-procedure/mu
         else:
             operator = env.lookup(expr.first)  # look up Procedure in Symbol-Table-Hierachy
         validate_procedure(operator)
         operands = expr.rest.map(lambda x: scheme_eval(x, env))
-        return scheme_apply(operator, operands, env)
+        return complete_apply(operator, operands, env)  # return scheme_apply(operator, operands, env)
     else:
         raise SchemeError("unknown expr in scheme_eval")
 
@@ -100,14 +106,18 @@ def scheme_apply(procedure, args, env):
         call_frame = env
     else:
         raise TypeError(f"unimplemented procedure: {procedure}")
-    params = procedure.formals
-    while params != nil and args != nil:  # set argument to Frame
-        call_frame.define(params.first, args.first)
-        params, args = params.rest, args.rest
-    if not (params == nil and args == nil):
-        raise SchemeError(f"apply invalid number of arguments to {procedure}, {params}, {args}")
+    assign_args_to_params(call_frame, args, procedure.formals)
     return scheme_forms.begin_eval(procedure.body, call_frame)
 
+
+# binding arguments to parameters of a function in Frame env
+def assign_args_to_params(env, args, params):
+    while params != nil and args != nil:  # set argument to Frame
+        env.define(params.first, args.first)
+        params, args = params.rest, args.rest
+    if not (params == nil and args == nil):
+        raise SchemeError(f"apply invalid number of arguments to {params}, {args}")
+    
 
 def read_line(str):
     lst = scheme_tokens.tokenize_line(str)
